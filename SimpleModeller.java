@@ -6,20 +6,24 @@ import java.util.Vector;
 import java.awt.Container;
 import java.awt.Component;
 import java.awt.Dimension;
-
+import java.awt.ItemSelectable;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemListener;
+import java.awt.event.ItemEvent;
 import java.awt.event.ActionEvent;
 import java.awt.BorderLayout;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -465,6 +469,10 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 		scene.setSelectionStateOfBox( indexOfSelectedBox, false );
 		indexOfSelectedBox = scene.coloredBoxes.size() - 1;
 		scene.setSelectionStateOfBox( indexOfSelectedBox, true );
+		
+		
+		//**************************Ajout***********************//
+		
 	}
 
 	public void setColorOfSelection( float r, float g, float b ) {
@@ -518,7 +526,6 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 			selectedList.clear();
 			indexOfSelectedBox = -1;
 			indexOfHilitedBox = -1;
-
 			
 		}
 		else{
@@ -529,6 +536,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 			scene.deleteBox( indexOfSelectedBox );
 			indexOfSelectedBox = -1;
 			indexOfHilitedBox = -1;
+
 		}
 		}
 	}
@@ -714,6 +722,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 			normalAtSelectedPoint.copy( normalAtHilitedPoint );
 			if ( indexOfSelectedBox >= 0 ) {
 				scene.setSelectionStateOfBox( indexOfSelectedBox, true );
+		
 			}
 			repaint();
 		}
@@ -878,6 +887,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 public class SimpleModeller implements ActionListener {
 
 	static final String applicationName = "Simple Modeller";
+	public int indBoite;
 
 	JFrame frame;
 	Container toolPanel;
@@ -893,7 +903,10 @@ public class SimpleModeller implements ActionListener {
 	JCheckBox displayBoundingBoxCheckBox;
 	JCheckBox enableCompositingCheckBox;
 	JCheckBox enableWireFrameCheckBox;
+	JComboBox boxesList;
 
+	
+	
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
 		if ( source == deleteAllMenuItem ) {
@@ -930,12 +943,26 @@ public class SimpleModeller implements ActionListener {
 				JOptionPane.INFORMATION_MESSAGE
 			);
 		}
+		
+		//*******************Ajout**********************//
 		else if ( source == createBoxButton ) {
 			sceneViewer.createNewBox();
+			indBoite = sceneViewer.indexOfSelectedBox;
+			boxesList.addItem(indBoite);
+			boxesList.setSelectedItem(indBoite);
+			Object boite = boxesList.getSelectedItem();			
 			sceneViewer.repaint();
 		}
 		else if ( source == deleteSelectionButton ) {
+			
 			sceneViewer.deleteSelection();
+			
+			boxesList.removeAllItems();
+			for(int i=0; i<sceneViewer.scene.coloredBoxes.size();i++)
+			{
+				boxesList.addItem(sceneViewer.scene.coloredBoxes.indexOf(sceneViewer.scene.coloredBoxes.elementAt(i)));
+			}			
+			
 			sceneViewer.repaint();
 		}
 		else if ( source == lookAtSelectionButton ) {
@@ -962,13 +989,27 @@ public class SimpleModeller implements ActionListener {
 			sceneViewer.enableCompositing = ! sceneViewer.enableCompositing;
 			sceneViewer.repaint();
 		}
+		//****************Ajout*******************//
 		else if (source == enableWireFrameCheckBox) {
 			sceneViewer.enableWireFrame = ! sceneViewer.enableWireFrame;
 			sceneViewer.repaint();
 		}
+		
+		//**************Ajout****************//
+		else if(source == boxesList)
+		{
+			// on désélectionne l'ancienne boite
+			indBoite = sceneViewer.indexOfSelectedBox;
+			sceneViewer.scene.setSelectionStateOfBox(indBoite, false);			
+			indBoite = boxesList.getSelectedIndex();			
+			sceneViewer.scene.setSelectionStateOfBox(indBoite, true);
+			sceneViewer.indexOfSelectedBox = indBoite;
+			sceneViewer.repaint();
+		}
+		
 	}
 
-
+	
 	// For thread safety, this should be invoked
 	// from the event-dispatching thread.
 	//
@@ -1067,6 +1108,27 @@ public class SimpleModeller implements ActionListener {
 		enableWireFrameCheckBox.setAlignmentX( Component.LEFT_ALIGNMENT );
 		enableWireFrameCheckBox.addActionListener(this);
 		toolPanel.add( enableWireFrameCheckBox );
+		
+		
+		boxesList = new JComboBox();
+		//boxesList.setSize(new Dimension(5,5));
+		boxesList.setAlignmentX( Component.LEFT_ALIGNMENT );
+		boxesList.addActionListener(this);
+		toolPanel.add(boxesList);
+		
+		
+	   /* ItemListener itemListener = new ItemListener() {
+	        public void itemStateChanged(ItemEvent itemEvent) {
+	          int state = itemEvent.getStateChange();
+	          System.out.println((state == ItemEvent.SELECTED) ? "Selected" : "Deselected");
+	          System.out.println("Item: " + itemEvent.getItem());
+	          ItemSelectable is = itemEvent.getItemSelectable();
+	          System.out.println(", Selected: " + is.toString());
+	        }
+	      };
+	      
+	      boxesList.addItemListener(itemListener);*/
+		
 
 		frame.pack();
 		frame.setVisible( true );
