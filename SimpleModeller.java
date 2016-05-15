@@ -69,9 +69,6 @@ class Scene {
 	AlignedBox3D boundingBoxOfScene = new AlignedBox3D();
 	boolean isBoundingBoxOfSceneDirty = false;
 
-	
-
-
 
 
 	public Scene() {
@@ -297,7 +294,8 @@ class Scene {
 	public void drawScene(
 		GL gl,
 		int indexOfHilitedBox, // -1 for none
-		boolean useAlphaBlending
+		boolean useAlphaBlending,
+		boolean useWireFrame
 	) {
 		if ( useAlphaBlending ) {
 			gl.glDisable(GL.GL_DEPTH_TEST);
@@ -311,13 +309,21 @@ class Scene {
 				gl.glColor4f( cb.r, cb.g, cb.b, cb.a );
 			else
 				gl.glColor3f( cb.r, cb.g, cb.b );
-			drawBox( gl, cb.box, false, false, false );
+			
+			if (!useWireFrame)
+			{
+				drawBox( gl, cb.box, false, false, false );
+			}
+			else
+			drawBox( gl, cb.box, false, true, false );
 		}
 		if ( useAlphaBlending ) {
 			gl.glDisable( GL.GL_BLEND );
 			gl.glDepthMask(true);
 			gl.glEnable(GL.GL_DEPTH_TEST);
 		}
+		
+	
 		for ( int i = 0; i < coloredBoxes.size(); ++i ) {
 			ColoredBox cb = coloredBoxes.elementAt(i);
 			if ( cb.isSelected && indexOfHilitedBox == i )
@@ -367,6 +373,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 	public boolean displayCameraTarget = false;
 	public boolean displayBoundingBox = false;
 	public boolean enableCompositing = false;
+	public boolean enableWireFrame = false;
 	
 	
 	
@@ -401,6 +408,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 		camera.reset();
 
 	}
+	
 	public Dimension getPreferredSize() {
 		return new Dimension( 512, 512 );
 	}
@@ -584,8 +592,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 		gl.glFrontFace(GL.GL_CCW);
 		gl.glDisable( GL.GL_LIGHTING );
 		gl.glShadeModel( GL.GL_FLAT );
-
-		scene.drawScene( gl, indexOfHilitedBox, enableCompositing );
+		scene.drawScene( gl, indexOfHilitedBox, enableCompositing, enableWireFrame );
 
 		if ( displayWorldAxes ) {
 			gl.glBegin( GL.GL_LINES );
@@ -615,10 +622,11 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 			gl.glColor3f( 0.5f, 0.5f, 0.5f );
 			scene.drawBoundingBoxOfScene( gl );
 		}
-
 		if ( radialMenu.isVisible() ) {
 			radialMenu.draw( gl, glut, getWidth(), getHeight() );
 		}
+		
+		
 
 		// gl.glFlush(); // I don't think this is necessary
 	}
@@ -884,6 +892,7 @@ public class SimpleModeller implements ActionListener {
 	JCheckBox displayCameraTargetCheckBox;
 	JCheckBox displayBoundingBoxCheckBox;
 	JCheckBox enableCompositingCheckBox;
+	JCheckBox enableWireFrameCheckBox;
 
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
@@ -951,6 +960,10 @@ public class SimpleModeller implements ActionListener {
 		}
 		else if ( source == enableCompositingCheckBox ) {
 			sceneViewer.enableCompositing = ! sceneViewer.enableCompositing;
+			sceneViewer.repaint();
+		}
+		else if (source == enableWireFrameCheckBox) {
+			sceneViewer.enableWireFrame = ! sceneViewer.enableWireFrame;
 			sceneViewer.repaint();
 		}
 	}
@@ -1048,6 +1061,12 @@ public class SimpleModeller implements ActionListener {
 		enableCompositingCheckBox.setAlignmentX( Component.LEFT_ALIGNMENT );
 		enableCompositingCheckBox.addActionListener(this);
 		toolPanel.add( enableCompositingCheckBox );
+		
+		
+		enableWireFrameCheckBox = new JCheckBox("Enable WireFrame", sceneViewer.enableWireFrame );
+		enableWireFrameCheckBox.setAlignmentX( Component.LEFT_ALIGNMENT );
+		enableWireFrameCheckBox.addActionListener(this);
+		toolPanel.add( enableWireFrameCheckBox );
 
 		frame.pack();
 		frame.setVisible( true );
