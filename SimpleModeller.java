@@ -410,6 +410,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 			scene.getBoundingBoxOfScene().getDiagonal().length() * 0.5f
 		) );
 		camera.reset();
+		
 
 	}
 	
@@ -703,10 +704,18 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 		mouse_x = e.getX();
 		mouse_y = e.getY();
 
+		
+		updateHiliting();
+		
 		if ( radialMenu.isVisible() || (SwingUtilities.isRightMouseButton(e) && !e.isShiftDown() && !e.isControlDown()) ) {
 			int returnValue = radialMenu.pressEvent( mouse_x, mouse_y );
 			if ( returnValue == CustomWidget.S_REDRAW )
+			{
+				scene.setSelectionStateOfBox(indexOfSelectedBox, false);
+				indexOfSelectedBox = indexOfHilitedBox;
+				scene.setSelectionStateOfBox(indexOfSelectedBox, true);
 				repaint();
+		}
 			if ( returnValue != CustomWidget.S_EVENT_NOT_CONSUMED )
 				return;
 		}
