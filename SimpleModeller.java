@@ -379,23 +379,26 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 	public boolean enableCompositing = false;
 	public boolean enableWireFrame = false;
 	
-	
+	SimpleModeller modeller;
 	
 	//***************Ajout*************************//
 	public boolean isMultipleSelection = false;
 	public ArrayList selectedList = new ArrayList();
 	public int indBoiteSupp;
 	public boolean isDecrement = false;
+	public boolean isSupp = false;
 
 	int mouse_x, mouse_y, old_mouse_x, old_mouse_y;
 
-	public SceneViewer( GLCapabilities caps ) {
+	public SceneViewer( GLCapabilities caps, SimpleModeller modeller ) {
 
 		super( caps );
 		addGLEventListener(this);
 
 		addMouseListener( this );
 		addMouseMotionListener( this );
+		
+		this.modeller = modeller;
 
 		radialMenu.setItemLabelAndID( RadialMenuWidget.CENTRAL_ITEM, "", COMMAND_CREATE_BOX );
 		radialMenu.setItemLabelAndID( 1, "Create Box", COMMAND_CREATE_BOX );
@@ -424,6 +427,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 		return x;
 	}
 	public void createNewBox() {
+		isSupp = false;
 		Vector3D halfDiagonalOfNewBox = new Vector3D(
 			ColoredBox.DEFAULT_SIZE*0.5f,
 			ColoredBox.DEFAULT_SIZE*0.5f,
@@ -473,7 +477,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 		
 		
 		//**************************Ajout***********************//
-		
+		modeller.ajouterBoite(indexOfSelectedBox);
 	}
 
 	public void setColorOfSelection( float r, float g, float b ) {
@@ -483,6 +487,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 	}
 
 	public void deleteSelection() {
+		isSupp = true;
 		//******************Ajout******************//
 		if(isMultipleSelection == true)
 		{
@@ -527,6 +532,8 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 			selectedList.clear();
 			indexOfSelectedBox = -1;
 			indexOfHilitedBox = -1;
+			isSupp = false;
+			updateHiliting();
 			
 		}
 		else{
@@ -535,8 +542,11 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 		
 		if ( indexOfSelectedBox >= 0 ) {
 			scene.deleteBox( indexOfSelectedBox );
+			modeller.deleteAction(indexOfSelectedBox);
 			indexOfSelectedBox = -1;
 			indexOfHilitedBox = -1;
+			updateHiliting();
+			isSupp = false;
 
 		}
 		}
@@ -544,8 +554,10 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 
 	public void deleteAll() {
 		scene.deleteAllBoxes();
+		modeller.boxesList.removeAllItems();
 		indexOfSelectedBox = -1;
 		indexOfHilitedBox = -1;
+		isSupp = false;
 	}
 
 	public void lookAtSelection() {
@@ -711,13 +723,15 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 			int returnValue = radialMenu.pressEvent( mouse_x, mouse_y );
 			if ( returnValue == CustomWidget.S_REDRAW )
 			{
+				
 				scene.setSelectionStateOfBox(indexOfSelectedBox, false);
 				indexOfSelectedBox = indexOfHilitedBox;
-				scene.setSelectionStateOfBox(indexOfSelectedBox, true);
+				scene.setSelectionStateOfBox(indexOfSelectedBox, true);				
 				repaint();
 		}
 			if ( returnValue != CustomWidget.S_EVENT_NOT_CONSUMED )
 				return;
+			
 		}
 
 		updateHiliting();
@@ -729,6 +743,8 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 			indexOfSelectedBox = indexOfHilitedBox;
 			selectedPoint.copy( hilitedPoint );
 			normalAtSelectedPoint.copy( normalAtHilitedPoint );
+			modeller.setValueOfList(indexOfSelectedBox);
+			
 			if ( indexOfSelectedBox >= 0 ) {
 				scene.setSelectionStateOfBox( indexOfSelectedBox, true );
 		
@@ -764,7 +780,9 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 				setColorOfSelection( 0, 0, 1 );
 				break;
 			case COMMAND_DELETE :
+				isSupp =true;
 				deleteSelection();
+				isSupp = false;
 				break;
 			}
 
@@ -893,7 +911,7 @@ class SceneViewer extends GLCanvas implements MouseListener, MouseMotionListener
 	}
 }
 
-public class SimpleModeller implements ActionListener {
+public class SimpleModeller implements ActionListener, ItemListener {
 
 	static final String applicationName = "Simple Modeller";
 	public int indBoite;
@@ -956,22 +974,11 @@ public class SimpleModeller implements ActionListener {
 		//*******************Ajout**********************//
 		else if ( source == createBoxButton ) {
 			sceneViewer.createNewBox();
-			indBoite = sceneViewer.indexOfSelectedBox;
-			boxesList.addItem(indBoite);
-			boxesList.setSelectedItem(indBoite);
-			Object boite = boxesList.getSelectedItem();			
 			sceneViewer.repaint();
 		}
 		else if ( source == deleteSelectionButton ) {
 			
-			sceneViewer.deleteSelection();
-			
-			boxesList.removeAllItems();
-			for(int i=0; i<sceneViewer.scene.coloredBoxes.size();i++)
-			{
-				boxesList.addItem(sceneViewer.scene.coloredBoxes.indexOf(sceneViewer.scene.coloredBoxes.elementAt(i)));
-			}			
-			
+			sceneViewer.deleteSelection();			
 			sceneViewer.repaint();
 		}
 		else if ( source == lookAtSelectionButton ) {
@@ -1005,7 +1012,7 @@ public class SimpleModeller implements ActionListener {
 		}
 		
 		//**************Ajout****************//
-		else if(source == boxesList)
+		/*else if(source == boxesList)
 		{
 			// on désélectionne l'ancienne boite
 			indBoite = sceneViewer.indexOfSelectedBox;
@@ -1013,11 +1020,38 @@ public class SimpleModeller implements ActionListener {
 			indBoite = boxesList.getSelectedIndex();			
 			sceneViewer.scene.setSelectionStateOfBox(indBoite, true);
 			sceneViewer.indexOfSelectedBox = indBoite;
+			System.out.println("ptit test");
 			sceneViewer.repaint();
-		}
+		}*/
 		
 	}
 
+	
+	public void setValueOfList(int value)
+	{
+		boxesList.setSelectedIndex(value);
+	}
+	
+	
+	public void deleteAction(int indBoite)
+	{
+		boxesList.removeAllItems();
+		for(int i=0; i<sceneViewer.scene.coloredBoxes.size();i++)
+		{
+			boxesList.addItem(i);
+		}
+		sceneViewer.scene.setSelectionStateOfBox(indBoite, false);
+		boxesList.setSelectedItem(null);
+		sceneViewer.indexOfHilitedBox = -1;
+		sceneViewer.indexOfSelectedBox = -1;
+		
+	}
+	
+	public void ajouterBoite(int indBoite)
+	{
+		boxesList.addItem(indBoite);
+		boxesList.setSelectedItem(indBoite);
+	}
 	
 	// For thread safety, this should be invoked
 	// from the event-dispatching thread.
@@ -1062,7 +1096,7 @@ public class SimpleModeller implements ActionListener {
 		GLCapabilities caps = new GLCapabilities();
 		caps.setDoubleBuffered(true);
 		caps.setHardwareAccelerated(true);
-		sceneViewer = new SceneViewer(caps);
+		sceneViewer = new SceneViewer(caps, this);
 
 		Container pane = frame.getContentPane();
 		// We used to use a BoxLayout as the layout manager here,
@@ -1122,7 +1156,7 @@ public class SimpleModeller implements ActionListener {
 		boxesList = new JComboBox();
 		//boxesList.setSize(new Dimension(5,5));
 		boxesList.setAlignmentX( Component.LEFT_ALIGNMENT );
-		boxesList.addActionListener(this);
+		boxesList.addItemListener(this);
 		toolPanel.add(boxesList);
 		
 		
@@ -1153,6 +1187,22 @@ public class SimpleModeller implements ActionListener {
 				}
 			}
 		);
+	}
+
+
+	@Override
+	public void itemStateChanged(ItemEvent e) {
+		if(e.getStateChange() == ItemEvent.SELECTED && sceneViewer.isSupp == false)
+		{
+			// on désélectionne l'ancienne boite
+			indBoite = sceneViewer.indexOfSelectedBox;
+			sceneViewer.scene.setSelectionStateOfBox(indBoite, false);			
+			indBoite = boxesList.getSelectedIndex();			
+			sceneViewer.scene.setSelectionStateOfBox(indBoite, true);
+			sceneViewer.indexOfSelectedBox = indBoite;
+			sceneViewer.repaint();
+		}
+		
 	}
 }
 
